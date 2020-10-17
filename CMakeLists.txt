@@ -248,6 +248,16 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Testing
 ENABLE_TESTING()
 
+if (ENABLE_LIBZIP_HACK)
+  set(CMAKE_VERBOSE_MAKEFILE on)
+
+  get_cmake_property(_variableNames VARIABLES)
+  list (SORT _variableNames)
+  foreach (_variableName ${_variableNames})
+      message(STATUS "${_variableName}=${${_variableName}}")
+  endforeach()
+endif()
+
 # Targets
 ADD_SUBDIRECTORY(lib)
 
@@ -256,6 +266,12 @@ if(BUILD_DOC)
 endif()
 
 if(BUILD_TOOLS)
+  if (ENABLE_LIBZIP_HACK)
+    get_filename_component(ZLIB_LIB_DIR "${ZLIB_LIBRARY}" DIRECTORY)
+    file(GLOB ZLIB_ALL_LIBS ${ZLIB_LIB_DIR}/libz*)
+    file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
+    file(COPY ${ZLIB_ALL_LIBS} DESTINATION ${PROJECT_BINARY_DIR}/lib)
+  endif()  
   ADD_SUBDIRECTORY(src)
 else(BUILD_TOOLS)
   if(BUILD_REGRESS)
