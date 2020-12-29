@@ -18,7 +18,7 @@ option(ENABLE_WINDOWS_CRYPTO "Enable use of Windows cryptography libraries" ON)
 option(ENABLE_BZIP2 "Enable use of BZip2" ON)
 option(ENABLE_LZMA "Enable use of LZMA" ON)
 
-option(BUILD_TOOLS "Build tools in the src directory (zipcmp, zipmerge, ziptool)" ON)
+option(BUILD_TOOLS "Build tools in the src directory (zipcmp, zipmerge, ziptool)" OFF)
 option(BUILD_REGRESS "Build regression tests" ON)
 option(BUILD_EXAMPLES "Build examples" ON)
 option(BUILD_DOC "Build documentation" ON)
