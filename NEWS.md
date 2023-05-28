@@ -1,3 +1,21 @@
+1.9.2 [2022-06-28]
+
+* Fix version number in header file.
+
+1.9.1 [2022-06-28]
+===================
+
+* Fix `zip_file_is_seekable()`.
+
+1.9.0 [2022-06-13]
+==================
+
+* Add `zip_file_is_seekable()`.
+* Improve compatibility with WinAES.
+* Fix encoding handling in `zip_name_locate()`.
+* Add option to `zipcmp` to output summary of changes.
+* Various bug fixes and documentation improvements.
+
 1.8.0 [2021-06-18]
 ==================
 
