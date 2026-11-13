@@ -1,6 +1,9 @@
+#ifndef _HAD_ZIP_SOURCE_FILE_H
+#define _HAD_ZIP_SOURCE_FILE_H
+
 /*
   zip_source_file.h -- header for common file operations
-  Copyright (C) 2020-2022 Dieter Baron and Thomas Klausner
+  Copyright (C) 2020-2024 Dieter Baron and Thomas Klausner
 
   This file is part of libzip, a library to manipulate ZIP archives.
   The authors can be contacted at <info@libzip.org>
@@ -49,6 +52,7 @@ struct zip_source_file_context {
     /* reading */
     char *fname;                      /* name of file to read from */
     void *f;                          /* file to read from */
+    bool close_file;                  /* whether to close file f on free */
     zip_stat_t st;                    /* stat information passed in */
     zip_file_attributes_t attributes; /* additional file attributes */
     zip_error_t stat_error;           /* error returned for stat */
@@ -59,11 +63,14 @@ struct zip_source_file_context {
     /* writing */
     char *tmpname;
     void *fout;
+    bool temp_output_created;
 
     zip_source_file_operations_t *ops;
     void *ops_userdata;
 };
 
+zip_source_file_context_t *zip_source_file_context_new(zip_source_file_operations_t *ops, void *ops_userdata);
+void zip_source_file_context_free(zip_source_file_context_t *ctx);
 
 /* The following methods must be implemented to support each feature:
    - close, read, seek, and stat must always be implemented.
@@ -88,3 +95,5 @@ struct zip_source_file_operations {
 };
 
 zip_source_t *zip_source_file_common_new(const char *fname, void *file, zip_uint64_t start, zip_int64_t len, const zip_stat_t *st, zip_source_file_operations_t *ops, void *ops_userdata, zip_error_t *error);
+
+#endif /* _HAD_ZIP_SOURCE_FILE_H */

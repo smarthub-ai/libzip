@@ -1,4 +1,65 @@
-# 1.10.0 [Unreleased]
+# 1.13 [Unreleased]
+
+* Introduce `zipsh` for interacting with zip archives. The API is still evolving, feedback is welcome. `ziptool` will be deprecated once `zipsh` stabilizes.
+* Include website in repository and source distribution.
+
+# 1.12.1 [2026-10-14]
+
+* Protect against denial of service attack (advisory GHSA-m3wq-j48p-jxwh, actually fixed in 1.12).
+* Fix compile issues.
+* Fix adding and replacing files in torrentzip archives.
+* Fix error handling in `zip_source_filep_create()`.
+
+# 1.12 [2026-10-07]
+
+* Keep order of local extra fields, even if an identical extra field is present in the central directory.
+* Add `zip_source_at_eof()` and `ZIP_SOURCE_AT_EOF`.
+* Consistently report CRC and decryption errors when reading exactly to end-of-file.
+* Remove Mbed TLS support - the required functions were made private.
+* Make non-random tests work on macOS and Windows by using a special version of libzip.
+* Securely clear passwords and key material before freeing it.
+* Use SipHash hash function with per-table random keys. This prevents hash flooding attacks.
+* Add compile time option to limit LZMA window size.
+* Add more comprehensive fuzzers for metadata and write code paths.
+* Fix `zip_source_is_seekable()`.
+* Fix setting incorrect WinZIP AES version in some cases.
+* Further improvements to overall stability and other minor adjustments have been made.
+
+# 1.11.4 [2025-05-23]
+
+* Use separate cmake package files for library and programs.
+* Improve documentation.
+
+# 1.11.3 [2025-01-20]
+
+* Report read error for corrupted encrypted file data.
+* Avoid unnecessary seeks when writing archive.
+* Don't hardcode `_Nullable` support in `zip.h` to allow it to be used with different compilers.
+* Improve check for GetSecurityInformation availability on Windows.
+
+# 1.11.2 [2024-10-31]
+
+* Fix performance regression in `zip_stat` introduced in 1.11.
+
+# 1.11.1 [2024-09-19]
+
+* Fix zipconf.h for version number with missing third component.
+
+# 1.11 [2024-09-19]
+
+* Stop searching after finding acceptable central directory, even if it contains inconsistencies.
+* Only write Zip64 EOCD if fields don't fit in normal EOCD. Previously libzip also wrote it when any directory entry required Zip64.
+* Allow bytes from 0x00-0x1F as UTF-8.
+* Add new error code `ZIP_ER_TRUNCATED_ZIP` for files that start with a valid local header signature.
+* `zipcmp`: add `-T` option for comparing timestamps.
+* `zip_file_replace` now removes the target's extra field information.
+
+# 1.10.1 [2023-08-23]
+
+* Add `ZIP_LENGTH_TO_END` and `ZIP_LENGTH_UNCHECKED`. Unless `ZIP_LENGTH_UNCHECKED` is used as `length`, it is an error for a file to shrink between the time when the source is created and when its data is read.
+* Fix test on Windows.
+
+# 1.10.0 [2023-06-23]
 
 * Make support for layered sources public.
 * Add `zip_source_zip_file` and `zip_source_zip_file_create`, deprecate `zip_source_zip` and `zip_source_zip_create`.
@@ -6,13 +67,14 @@
 * Fix handling of files of size 4294967295.
 * `zipmerge`: copy extra fields.
 * `zipmerge`: add option to keep files uncompressed.
-* Use ISO C secure library functions, if available.
+* Switch test framework to use nihtest instead of Perl.
 * Fix reading/writing compressed data with buffers > 4GiB.
 * Restore support for torrentzip.
 * Add warnings when using deprecated functions.
 * Allow keeping files for empty archives.
-* Support mbedTLS>=3.3.0.
+* Support Mbed TLS>=3.3.0.
 * Support OpenSSL 3.
+* Use ISO C secure library functions, if available.
 
 
 # 1.9.2 [2022-06-28]
@@ -99,7 +161,7 @@
 * Fix bug in AES encryption affecting certain file sizes
 * Keep file permissions when modifying zip archives
 * Support systems with small stack size.
-* Support mbed TLS as crypto backend.
+* Support Mbed TLS as crypto backend.
 * Add nullability annotations.
 
 

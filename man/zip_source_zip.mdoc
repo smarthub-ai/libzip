@@ -83,6 +83,7 @@ is zero and
 is \-1, the whole file will be copied without decompressing it.
 .Pp
 Supported flags are:
+.Bl -tag -width Dv
 .It Dv ZIP_FL_UNCHANGED
 Try to get the original data without any changes that may have been
 made to
@@ -124,7 +125,7 @@ and
 .Xr libzip 3 ,
 .Xr zip_file_add 3 ,
 .Xr zip_file_replace 3 ,
-.Xr zip_source 3
+.Xr zip_source 5
 .Sh HISTORY
 .Fn zip_source_zip
 was added in libzip 1.0.
@@ -134,10 +135,10 @@ Both were deprecated in libzip 1.10.0.
 Use
 .Fn zip_source_zip_file
 or
-.F zip_source_zip_file_create
+.Fn zip_source_zip_file_create
 instead.
 .Sh AUTHORS
 .An -nosplit
 .An Dieter Baron Aq Mt dillo@nih.at
 and
-.An Thomas Klausner Aq Mt tk@giga.or.at
+.An Thomas Klausner Aq Mt wiz@gatalith.at

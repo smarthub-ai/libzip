@@ -1,0 +1,9 @@
+{
+  "dependencies": [
+    "bzip2",
+    "cmocka",
+    "liblzma",
+    "zlib",
+    "zstd"
+  ]
+}

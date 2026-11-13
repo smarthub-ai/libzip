@@ -93,7 +93,6 @@ On success, the layered source takes ownership of
 The caller should not free it.
 .Pp
 The interaction with the lower layer depends on the command:
-.El
 .Ss Dv ZIP_SOURCE_ACCEPT_EMPTY
 If the layered source supports this command, the lower layer is not called automatically.
 Otherwise, the return value of the lower source is used.
@@ -152,7 +151,7 @@ Required memory could not be allocated.
 .Xr zip_file_add 3 ,
 .Xr zip_file_attributes_init 3 ,
 .Xr zip_file_replace 3 ,
-.Xr zip_source 3 ,
+.Xr zip_source 5 ,
 .Xr zip_source_function 3 ,
 .Xr zip_source_pass_to_lower_layer 3
 .Sh HISTORY
@@ -164,4 +163,4 @@ were added in libzip 1.10.
 .An -nosplit
 .An Dieter Baron Aq Mt dillo@nih.at
 and
-.An Thomas Klausner Aq Mt tk@giga.or.at
+.An Thomas Klausner Aq Mt wiz@gatalith.at

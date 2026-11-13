@@ -30,7 +30,7 @@
 .\" OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 .\" IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.TH "ZIP_OPEN" "3" "October 9, 2022" "NiH" "Library Functions Manual"
+.TH "ZIP_OPEN" "3" "September 16, 2025" "NiH" "Library Functions Manual"
 .nh
 .if n .ad l
 .SH "NAME"
@@ -122,6 +122,20 @@ to indicate the error, while
 sets
 \fIze\fR
 to indicate the error.
+.SH "CAVEATS"
+Opening the same archive multiple times can lead to problems: When a modified archive is closed, the underlying file is rewritten and thus invalidates all other
+\fIzip_t\fR
+objects for that archive, which will fail in unpredictable ways.
+Also, writing may fail on some platforms if the file is in use by another
+\fIzip_t\fR
+object.
+.PP
+Thus, it is only valid to open the same archive multiple times as long as you make changes to at most one
+\fIzip_t\fR
+object and close that last.
+Using the flag
+\fRZIP_RDONLY\fR
+helps enforce that.
 .SH "EXAMPLES"
 Here's an example of how you could report errors during
 \fBzip_open\fR:
@@ -208,7 +222,8 @@ be reported then.
 libzip(3),
 zip_close(3),
 zip_error_strerror(3),
-zip_fdopen(3)
+zip_fdopen(3),
+zip_source(5)
 .SH "HISTORY"
 \fBzip_open\fR()
 and
@@ -217,4 +232,4 @@ were added in libzip 1.0.
 .SH "AUTHORS"
 Dieter Baron <\fIdillo@nih.at\fR>
 and
-Thomas Klausner <\fItk@giga.or.at\fR>
+Thomas Klausner <\fIwiz@gatalith.at\fR>

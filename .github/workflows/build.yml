@@ -1,3 +1,7 @@
+# We only use CI builds to find errors, we don't use the compiled results, so they can't be used for supply chain attacks.
+# Therefore, we'd rather automatically get fixes committed to the used actions than exact reproducibility.
+# That is why we use version tags instead of commit hashes.
+
 name: build
 on: [push]
 permissions:
@@ -18,37 +22,64 @@ jobs:
             name_extra: " clang-cl"
     steps:
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
+
+      - name: install python and pip
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
       - name: install dependencies (Linux)
         if: ${{ runner.os == 'Linux' }}
         run: |
-          sudo apt-get install libzstd-dev
+          sudo apt-get update
+          sudo apt-get install -y bzip2 libbz2-dev libzstd-dev liblzma-dev libreadline-dev libcmocka-dev
+
+      - name: install dependencies (macOS)
+        if: ${{ runner.os == 'macOS' }}
+        run: |
+          brew install cmocka
+
+      - name: install latest CMake and Ninja for lukka/run-vcpkg (Windows)
+        if: ${{ runner.os == 'Windows' }}
+        uses: lukka/get-cmake@latest
+
       - name: install dependencies (Windows)
         if: ${{ runner.os == 'Windows' }}
-        uses: lukka/run-vcpkg@v7
-        id: runvcpkg
+        uses: lukka/run-vcpkg@v11
         with:
-          vcpkgGitCommitId: f93ba152d55e1d243160e690bc302ffe8638358e
-          vcpkgTriplet: x64-windows
-          vcpkgArguments: zlib bzip2 liblzma zstd
-      - name: prepare build directory
+          vcpkgGitCommitId: f3e10653cc27d62a37a3763cd84b38bca07c6075 # 2026.06.01
+
+      - name: prepare build directory and install nihtest
         run: |
           cmake -E make_directory ${{runner.workspace}}/build
+          pip install nihtest
+
       - name: configure (Unix)
         if: ${{ runner.os != 'Windows' }}
         working-directory: ${{runner.workspace}}/build
         run: |
-          cmake ${{ matrix.cmake_extra }} ${{github.workspace}}
+          cmake ${{ matrix.cmake_extra }} -DREQUIRE_ALL_TESTS=ON ${{github.workspace}}
+
       - name: configure (Windows)
         if: ${{ runner.os == 'Windows' }}
         working-directory: ${{runner.workspace}}/build
         run: |
-          cmake ${{ matrix.cmake_extra }} -DCMAKE_TOOLCHAIN_FILE=${{env.VCPKG_ROOT}}/scripts/buildsystems/vcpkg.cmake ${{github.workspace}}
+          cmake ${{ matrix.cmake_extra }} -DREQUIRE_ALL_TESTS=ON -DCMAKE_TOOLCHAIN_FILE=${{env.VCPKG_ROOT}}/scripts/buildsystems/vcpkg.cmake ${{github.workspace}}
+
       - name: build
         working-directory: ${{runner.workspace}}/build
         run: |
           cmake --build . --config Release
+
+      - name: Archive production artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: regress-directory-${{ matrix.os }}-${{ matrix.name_extra }}
+          path: |
+            ${{runner.workspace}}/build/regress
+
       - name: test
         working-directory: ${{runner.workspace}}/build
         run: |
-          ctest -v -C Release
+          ctest --output-on-failure --no-tests=error -V -C Release

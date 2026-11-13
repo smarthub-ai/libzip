@@ -29,7 +29,7 @@
 .\" OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 .\" IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.Dd April 29, 2021
+.Dd July 31, 2025
 .Dt ZIP_SOURCE_WINDOW_CREATE 3
 .Os
 .Sh NAME
@@ -53,10 +53,8 @@ If
 .Ar len
 is \-1, the window spans to the end of the underlying source.
 .Pp
-.Fn zip_source_window
-and
 .Fn zip_source_window_create
-don't take ownership of
+doesn't take ownership of
 .Ar source .
 The caller is responsible for freeing it.
 (This is different to other layered sources.)
@@ -87,8 +85,7 @@ Required memory could not be allocated.
 .El
 .Sh SEE ALSO
 .Xr libzip 3 ,
-.Xr zip_source 3
-.Xr zip_source 3
+.Xr zip_source 5
 .Sh HISTORY
 .Fn zip_source_window_create
 was added in libzip 1.8.0.
@@ -96,4 +93,4 @@ was added in libzip 1.8.0.
 .An -nosplit
 .An Dieter Baron Aq Mt dillo@nih.at
 and
-.An Thomas Klausner Aq Mt tk@giga.or.at
+.An Thomas Klausner Aq Mt wiz@gatalith.at

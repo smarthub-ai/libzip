@@ -1,6 +1,6 @@
 /*
   zip_utf-8.c -- UTF-8 support functions for libzip
-  Copyright (C) 2011-2021 Dieter Baron and Thomas Klausner
+  Copyright (C) 2011-2024 Dieter Baron and Thomas Klausner
 
   This file is part of libzip, a library to manipulate ZIP archives.
   The authors can be contacted at <info@libzip.org>
@@ -94,83 +94,148 @@ static const zip_uint16_t _cp437_to_unicode[256] = {
 #define UTF_8_LEN_4_MATCH 0xf0
 #define UTF_8_CONTINUE_MASK 0xc0
 #define UTF_8_CONTINUE_MATCH 0x80
+#define UTF_8_CONTINUE_VALUE_MASK 0x3f
+
+/* smallest code point that has to be encoded with a sequence of the given length, indexed by number of continuation bytes */
+static const zip_uint32_t _utf8_minimum_code_point[4] = {0, 0x80, 0x800, 0x10000};
 
 
-zip_encoding_type_t
-_zip_guess_encoding(zip_string_t *str, zip_encoding_type_t expected_encoding) {
+zip_encoding_type_t _zip_guess_encoding(zip_string_t *str, zip_encoding_type_t expected_encoding) {
     zip_encoding_type_t enc;
     const zip_uint8_t *name;
-    zip_uint32_t i, j, ulen;
+    zip_uint32_t i, j, ulen, codepoint;
+    bool can_be_ascii = true;
+    bool can_be_utf8 = true;
+    bool has_control_characters = false;
 
-    if (str == NULL)
+    if (str == NULL) {
         return ZIP_ENCODING_ASCII;
+    }
 
     name = str->raw;
 
-    if (str->encoding != ZIP_ENCODING_UNKNOWN)
-        enc = str->encoding;
-    else {
-        enc = ZIP_ENCODING_ASCII;
-        for (i = 0; i < str->length; i++) {
-            if ((name[i] > 31 && name[i] < 128) || name[i] == '\r' || name[i] == '\n' || name[i] == '\t')
-                continue;
+    if (str->encoding != ZIP_ENCODING_UNKNOWN) {
+        return str->encoding;
+    }
 
-            enc = ZIP_ENCODING_UTF8_GUESSED;
-            if ((name[i] & UTF_8_LEN_2_MASK) == UTF_8_LEN_2_MATCH)
-                ulen = 1;
-            else if ((name[i] & UTF_8_LEN_3_MASK) == UTF_8_LEN_3_MATCH)
-                ulen = 2;
-            else if ((name[i] & UTF_8_LEN_4_MASK) == UTF_8_LEN_4_MATCH)
-                ulen = 3;
-            else {
-                enc = ZIP_ENCODING_CP437;
-                break;
+    for (i = 0; i < str->length; i++) {
+        if (name[i] < 128) {
+            if (name[i] < 32 && name[i] != '\r' && name[i] != '\n' && name[i] != '\t') {
+                has_control_characters = true;
             }
-
-            if (i + ulen >= str->length) {
-                enc = ZIP_ENCODING_CP437;
-                break;
-            }
-
-            for (j = 1; j <= ulen; j++) {
-                if ((name[i + j] & UTF_8_CONTINUE_MASK) != UTF_8_CONTINUE_MATCH) {
-                    enc = ZIP_ENCODING_CP437;
-                    goto done;
-                }
-            }
-            i += ulen;
+            continue;
         }
+
+        can_be_ascii = false;
+        if ((name[i] & UTF_8_LEN_2_MASK) == UTF_8_LEN_2_MATCH) {
+            ulen = 1;
+            codepoint = name[i] & ~UTF_8_LEN_2_MASK;
+        }
+        else if ((name[i] & UTF_8_LEN_3_MASK) == UTF_8_LEN_3_MATCH) {
+            ulen = 2;
+            codepoint = name[i] & ~UTF_8_LEN_3_MASK;
+        }
+        else if ((name[i] & UTF_8_LEN_4_MASK) == UTF_8_LEN_4_MATCH) {
+            ulen = 3;
+            codepoint = name[i] & ~UTF_8_LEN_4_MASK;
+        }
+        else {
+            can_be_utf8 = false;
+            break;
+        }
+
+        if (i + ulen >= str->length) {
+            can_be_utf8 = false;
+            break;
+        }
+
+        for (j = 1; j <= ulen; j++) {
+            if ((name[i + j] & UTF_8_CONTINUE_MASK) != UTF_8_CONTINUE_MATCH) {
+                can_be_utf8 = false;
+                goto done;
+            }
+            codepoint = (codepoint << 6) | (name[i + j] & UTF_8_CONTINUE_VALUE_MASK);
+        }
+
+        /* reject overlong encodings, surrogate halves, and code points above U+10FFFF */
+        if (codepoint < _utf8_minimum_code_point[ulen] || (codepoint >= 0xd800 && codepoint <= 0xdfff) || codepoint > 0x10ffff) {
+            can_be_utf8 = false;
+            goto done;
+        }
+        i += ulen;
     }
 
 done:
-    str->encoding = enc;
+    enc = ZIP_ENCODING_CP437;
 
-    if (expected_encoding != ZIP_ENCODING_UNKNOWN) {
-        if (expected_encoding == ZIP_ENCODING_UTF8_KNOWN && enc == ZIP_ENCODING_UTF8_GUESSED)
-            str->encoding = enc = ZIP_ENCODING_UTF8_KNOWN;
+    switch (expected_encoding) {
+    case ZIP_ENCODING_UTF8_KNOWN:
+    case ZIP_ENCODING_UTF8_GUESSED:
+        if (can_be_utf8) {
+            enc = ZIP_ENCODING_UTF8_KNOWN;
+        }
+        else {
+            enc = ZIP_ENCODING_ERROR;
+        }
+        break;
 
-        if (expected_encoding != enc && enc != ZIP_ENCODING_ASCII)
-            return ZIP_ENCODING_ERROR;
+    case ZIP_ENCODING_ASCII:
+        if (can_be_ascii && !has_control_characters) {
+            enc = ZIP_ENCODING_ASCII;
+        }
+        else {
+            enc = ZIP_ENCODING_ERROR;
+        }
+        break;
+
+    case ZIP_ENCODING_CP437:
+        enc = ZIP_ENCODING_CP437;
+        break;
+
+    case ZIP_ENCODING_UNKNOWN:
+        if (can_be_ascii && !has_control_characters) {
+            /* only bytes from 0x20-0x7F */
+            enc = ZIP_ENCODING_ASCII;
+        }
+        else if (can_be_ascii && has_control_characters) {
+            /* only bytes from 0x00-0x7F */
+            enc = ZIP_ENCODING_CP437;
+        }
+        else if (can_be_utf8) {
+            /* contains bytes from 0x80-0xFF and is valid UTF-8 */
+            enc = ZIP_ENCODING_UTF8_GUESSED;
+        }
+        else {
+            /* fallback */
+            enc = ZIP_ENCODING_CP437;
+        }
+        break;
+    case ZIP_ENCODING_ERROR:
+        /* invalid, shouldn't happen */
+        enc = ZIP_ENCODING_ERROR;
+        break;
     }
 
+    str->encoding = enc;
     return enc;
 }
 
 
-static zip_uint32_t
-_zip_unicode_to_utf8_len(zip_uint32_t codepoint) {
-    if (codepoint < 0x0080)
+static zip_uint32_t _zip_unicode_to_utf8_len(zip_uint32_t codepoint) {
+    if (codepoint < 0x0080) {
         return 1;
-    if (codepoint < 0x0800)
+    }
+    if (codepoint < 0x0800) {
         return 2;
-    if (codepoint < 0x10000)
+    }
+    if (codepoint < 0x10000) {
         return 3;
+    }
     return 4;
 }
 
 
-static zip_uint32_t
-_zip_unicode_to_utf8(zip_uint32_t codepoint, zip_uint8_t *buf) {
+static zip_uint32_t _zip_unicode_to_utf8(zip_uint32_t codepoint, zip_uint8_t *buf) {
     if (codepoint < 0x0080) {
         buf[0] = codepoint & 0xff;
         return 1;
@@ -194,21 +259,22 @@ _zip_unicode_to_utf8(zip_uint32_t codepoint, zip_uint8_t *buf) {
 }
 
 
-zip_uint8_t *
-_zip_cp437_to_utf8(const zip_uint8_t *const _cp437buf, zip_uint32_t len, zip_uint32_t *utf8_lenp, zip_error_t *error) {
+zip_uint8_t *_zip_cp437_to_utf8(const zip_uint8_t *const _cp437buf, zip_uint32_t len, zip_uint32_t *utf8_lenp, zip_error_t *error) {
     zip_uint8_t *cp437buf = (zip_uint8_t *)_cp437buf;
     zip_uint8_t *utf8buf;
     zip_uint32_t buflen, i, offset;
 
     if (len == 0) {
-        if (utf8_lenp)
+        if (utf8_lenp) {
             *utf8_lenp = 0;
+        }
         return NULL;
     }
 
     buflen = 1;
-    for (i = 0; i < len; i++)
+    for (i = 0; i < len; i++) {
         buflen += _zip_unicode_to_utf8_len(_cp437_to_unicode[cp437buf[i]]);
+    }
 
     if ((utf8buf = (zip_uint8_t *)malloc(buflen)) == NULL) {
         zip_error_set(error, ZIP_ER_MEMORY, 0);
@@ -216,11 +282,13 @@ _zip_cp437_to_utf8(const zip_uint8_t *const _cp437buf, zip_uint32_t len, zip_uin
     }
 
     offset = 0;
-    for (i = 0; i < len; i++)
+    for (i = 0; i < len; i++) {
         offset += _zip_unicode_to_utf8(_cp437_to_unicode[cp437buf[i]], utf8buf + offset);
+    }
 
     utf8buf[buflen - 1] = 0;
-    if (utf8_lenp)
+    if (utf8_lenp) {
         *utf8_lenp = buflen - 1;
+    }
     return utf8buf;
 }

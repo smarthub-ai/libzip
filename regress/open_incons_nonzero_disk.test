@@ -1,0 +1,10 @@
+program tryopen
+arguments -c -s test.zip
+file test.zip incons-nonzero-disk.zip
+return 1
+stdout
+opening 'test.zip' returned error Zip archive inconsistent: entry 0: invalid disk number start
+end-of-inline-data
+stderr
+1 errors
+end-of-inline-data

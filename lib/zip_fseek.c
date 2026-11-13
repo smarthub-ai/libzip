@@ -1,6 +1,6 @@
 /*
   zip_fseek.c -- seek in file
-  Copyright (C) 2016-2021 Dieter Baron and Thomas Klausner
+  Copyright (C) 2016-2024 Dieter Baron and Thomas Klausner
 
   This file is part of libzip, a library to manipulate ZIP archives.
   The authors can be contacted at <info@libzip.org>
@@ -34,13 +34,14 @@
 
 #include "zipint.h"
 
-ZIP_EXTERN zip_int8_t
-zip_fseek(zip_file_t *zf, zip_int64_t offset, int whence) {
-    if (!zf)
+ZIP_EXTERN zip_int8_t zip_fseek(zip_file_t *zf, zip_int64_t offset, int whence) {
+    if (zf == NULL) {
         return -1;
+    }
 
-    if (zf->error.zip_err != 0)
+    if (zf->error.zip_err != 0) {
         return -1;
+    }
 
     if (zip_source_seek(zf->src, offset, whence) < 0) {
         zip_error_set_from_source(&zf->error, zf->src);
@@ -51,11 +52,10 @@ zip_fseek(zip_file_t *zf, zip_int64_t offset, int whence) {
 }
 
 
-ZIP_EXTERN int
-zip_file_is_seekable(zip_file_t *zfile) {
-    if (!zfile) {
+ZIP_EXTERN int zip_file_is_seekable(zip_file_t *zfile) {
+    if (zfile == NULL) {
         return -1;
     }
-    
+
     return zip_source_is_seekable(zfile->src);
 }

@@ -1,23 +1,27 @@
 # test encryption support
 # TODO: only checks recognition of encrypted entries for now.
 return 0
-args encrypt.zzip stat 0 stat 1
-file encrypt.zzip encrypt.zip encrypt.zip
-stdout name: 'encrypted'
-stdout index: '0'
-stdout size: '4'
-stdout compressed size: '16'
-stdout mtime: 'Mon Apr 24 2006 16:01:34'
-stdout crc: '7e3265a8'
-stdout compression method: '0'
-stdout encryption method: '1'
-stdout 
-stdout name: 'plain'
-stdout index: '1'
-stdout size: '4'
-stdout compressed size: '4'
-stdout mtime: 'Mon Apr 24 2006 16:01:42'
-stdout crc: '7e3265a8'
-stdout compression method: '0'
-stdout encryption method: '0'
-stdout 
+arguments encrypt.zzip
+stdin
+stat -i 0
+stat -i 1
+end-of-inline-data
+file encrypt.zzip encrypt.zip
+stdout
+Name: encrypted
+Index: 0
+Size: 4
+Compressed Size: 16
+Modification Time: Mon Apr 24 2006 16:01:34
+CRC: 7e3265a8
+Compression Method: store
+Encryption Method: PKWARE
+Name: plain
+Index: 1
+Size: 4
+Compressed Size: 4
+Modification Time: Mon Apr 24 2006 16:01:42
+CRC: 7e3265a8
+Compression Method: store
+Encryption Method: none
+end-of-inline-data
